@@ -23,3 +23,13 @@ Note that this library requires httplib2 to be installed.
 I only have a Nimbus "cloud_clock" and so far have only done a small amount of
 testing. Any input, bug reports or additional functionality would be much
 appreciated.
+
+---
+
+The Wink API is currently in beta and not yet publicly available. However, you
+may request a set of Oauth tokens by emailing questions@quirky.com and asking
+for early access to the Wink API. 
+
+Steven Shaw at Quirky has been really responsive in several forums over the
+last few weeks as they have been rolling out the API. See this forum for more
+details: http://www.quirky.com/forums/topic/21462
