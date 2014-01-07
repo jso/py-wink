@@ -30,7 +30,6 @@ class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
     class dial(BaseDevice):
 
         def templates(self):
-            # TODO API doc is wrong; given as /dial_template, actually is /dial_templates
             return self.wink._get("/dial_templates")
 
     def __init__(self, wink, id, data):
