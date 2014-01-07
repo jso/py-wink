@@ -1,10 +1,25 @@
 if __name__ == "__main__":
-    from wink.api import wink
+    import wink
 
-    w = wink("config.cfg")
+    auth_info = dict(
+        base_url="https://winkapi.quirky.com"
+    )
 
-    username = raw_input("username? ")
-    password = raw_input("password? ")
+    # request information from the user
+    for k in [
+        "client_id",
+        "client_secret",
+        "username",
+        "password",
+    ]:
+        auth_info[k] = raw_input("%s? " % k)
 
-    # do password auth
-    w.auth(username, password)
+    try:
+        auth_result = wink.auth(**auth_info)
+    except RuntimeError as e:
+        print "Authentication failed. :("
+        print e
+    else:
+        print "Authentication success! ;-)"
+        wink.config_file_save("config.cfg", auth_result)
+

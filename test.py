@@ -1,7 +1,9 @@
 if __name__ == "__main__":
-    from wink.api import wink
+    import wink
 
-    w = wink("config.cfg")
+    auth_info = wink.config_file_load("config.cfg")
+
+    w = wink.wink(**auth_info)
 
     w.populate_devices()
 
