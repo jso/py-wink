@@ -70,7 +70,22 @@ class wink(object):
             body["refresh_token"] = self.config.get("refresh_tokens", username)
             body["grant_type"] = "refresh_token"
 
-        data = self._post("/oauth2/token", body)
+        headers = {"Content-Type": "application/json"}
+        body = json.dumps(body)
+
+        resp, content = self.http.request(
+            self._url("/oauth2/token"),
+            "POST",
+            headers=headers,
+            body=body
+        )
+
+        if resp["status"] != "201":
+            raise RuntimeError(
+                "expected HTTP 201, but got %s for POST /oauth2/token" % resp["status"] 
+            )
+
+        data = json.loads(content)
 
         if not self.config.has_section("access_tokens"):
             self.config.add_section("access_tokens")
