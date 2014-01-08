@@ -10,6 +10,18 @@ Python library for interfacing with Wink devices, including:
 
 This library implements the API at: http://docs.wink.apiary.io/
 
+### Status
+
+I am still in the early testing and exploration stages, currently focusing on
+the Nimbus cloud_clock. As soon as I can get my hands on the other devices :) I
+will be adding support for those as well.
+
+I am generally satisfied with the library architecture and will be focusing on
+adding features and working with the team at Quirky to iron out any issues I
+find with the API.
+
+All bug reports and feature requests are much appreciated.
+
 ### Getting started
 
 1. Get Oauth tokens to access the API.  The Wink API is currently in beta and
@@ -23,16 +35,24 @@ This library implements the API at: http://docs.wink.apiary.io/
    can interact with the Wink servers. All the test script does is fetch a list
    of your Wink devices, and print out the type and id for each.
 
+### Let's see what this can do
+
+After you have authenticated, check out the scripts in the "examples"
+directory.
+
+#### cloud_clock.py
+
+1. demos each dial, showing the extent of the needle positions and
+corresponding values
+
+2. rotates the dials to the left
+
+3. reverts to the original configuration
+
 ### Requirements
 
 - httplib2
 - That's all, folks!
-
-### Caveats
-
-I only have a Nimbus "cloud_clock" and so far have only done a small amount of
-testing. Any input, bug reports or additional functionality would be much
-appreciated.
 
 ### Thanks
 
