@@ -55,6 +55,37 @@ class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
 
             return status
 
+        def demo(self, delay=5):
+            """
+            Generates a sequence of updates to run the dial through 
+            the range of values and positions.
+            """
+            
+            import time
+
+            original = self.get_config()
+
+            # do some stuff
+            values = [
+                ("min", original["dial_configuration"]["min_value"]),
+                ("max", original["dial_configuration"]["max_value"]),
+            ]
+
+            # set the dial to manual control
+            self.update(dict(
+                channel_configuration=dict(channel_id="10"),
+                dial_configuration=original["dial_configuration"],
+                label="demo!", 
+            ))
+            time.sleep(delay)
+
+            for text, value in values:
+                self.update(dict(value=value, label="%s: %s" % (text, value)))
+                time.sleep(delay)
+
+            # revert to the original configuration
+            self.update(original)
+
     def __init__(self, wink, id, data):
         BaseDevice.__init__(self, wink, id, data)
 
