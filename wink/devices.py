@@ -1,5 +1,7 @@
 from interfaces import *
 
+import time
+
 class BaseDevice(object):
     
     def __init__(self, wink, id, data):
@@ -35,8 +37,9 @@ class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
         def templates(self):
             return self.wink._get("/dial_templates")
 
-        def get_config(self):
-            status = self.get()
+        def get_config(self, status=None):
+            if not status:
+                status = self.get()
             
             # drop "id" keys, so we're just
             # left with the keys that are settable
@@ -55,14 +58,27 @@ class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
 
             return status
 
+        def revert(self):
+            """
+            If you break anything, run this to revert the dial
+            configuration to the original value from when the object
+            was instantiated.
+
+            TODO: it would be great to have "revert" functionality on
+            all devices, but the trick is figuring out how to get the
+            device-specific "settable" config (i.e. get_config for
+            each device).
+            """
+
+            old_config = self.get_config(self.data)
+            self.update(old_config)
+
         def demo(self, delay=5):
             """
             Generates a sequence of updates to run the dial through 
             the range of values and positions.
             """
             
-            import time
-
             original = self.get_config()
 
             # do some stuff
@@ -85,6 +101,29 @@ class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
 
             # revert to the original configuration
             self.update(original)
+
+        def flash_value(self, duration=5):
+            """
+            Temporarily replace the existing label with the current value
+            for the specified duration.
+            """
+
+            original = self.get_config()
+
+            # set the dial to manual control
+            self.update(dict(
+                channel_configuration=dict(channel_id="10"),
+                dial_configuration=original["dial_configuration"],
+                label="%s" % original["value"],
+            ))
+            time.sleep(duration)
+
+            self.update(dict(
+                channel_configuration=original["channel_configuration"],
+                dial_configuration=original["dial_configuration"],
+                label=original["label"],
+                labels=original["labels"],
+            ))
 
     def __init__(self, wink, id, data):
         BaseDevice.__init__(self, wink, id, data)
