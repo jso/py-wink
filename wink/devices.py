@@ -82,17 +82,7 @@ class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
         non_config_fields = [
             "dial_id",
             "dial_index",
-            "position",
         ]
-
-        # TODO: reevaluate whether "position" needs to be
-        # removed after Quirky replies to my bug report. There
-        # is some odd behavior here. Currently, when calling 
-        # "update" on a dial, if both position and value are 
-        # given, the dial doesn't move at all. If only value
-        # is given, then the raw 'value' value is copied to the
-        # position field (I think position should be recomputed
-        # based on the new dial_configuration)
 
         def templates(self):
             return self.wink._get("/dial_templates")
