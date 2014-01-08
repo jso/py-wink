@@ -4,10 +4,25 @@ import json
 import devices
 
 class Wink(object):
+    """
+    Main object for making API calls to the Wink cloud servers.
+
+    Constructor requires the API base URL and an access token.
+
+    "populate_devices" reads the device list from the Wink servers
+    and instantiates the appropriate class for each device.
+
+    There are several ways to access the device objects:
+    "device_list" gives the full list of top-level devices
+    "devices_by_type" gives all devices of a given type
+    "device_types" gives all device types that are instantiated
+    "[device_type]" returns the device object for the first seen
+        for the given type
+    "[device_type]s" returns a list of all devices of that type
+    """
 
     required_kwargs = set([
         "base_url",
-        "username",
         "access_token",
     ])
 
@@ -22,7 +37,8 @@ class Wink(object):
             setattr(self, k, kwargs[k])
 
         self.http = httplib2.Http()
-        self.devices = []
+        self._device_list = []
+        self._devices_by_type = {}
 
     def _url(self, path):
         return "%s%s" % (self.base_url, path)
@@ -101,7 +117,13 @@ class Wink(object):
     def populate_devices(self):
         devices_info = self.get_devices()
 
-        del self.devices[:]
+        # clean up data structures, just in case this is called
+        # multiple times in the same instance.
+        del self._device_list[:]
+        for device_type in self._devices_by_type:
+            delattr(self, device_type)
+            delattr(self, "%ss" % device_type)
+        self._devices_by_type.clear()
 
         for device_info in devices_info:
             device_type, device_id = None, None
@@ -115,5 +137,22 @@ class Wink(object):
 
             device_cls = getattr(devices, device_type)
             device_obj = device_cls(self, device_id, device_info)
-            self.devices.append(device_obj)
 
+            # update some data structures to provide access to the devices
+            self._device_list.append(device_obj)
+
+            if not hasattr(self, device_type):
+                setattr(self, device_type, lambda: device_obj)
+                self._devices_by_type[device_type] = []
+                setattr(self, "%ss" % device_type, lambda: list(self._devices_by_type[device_type]))
+
+            self._devices_by_type[device_type].append(device_obj)
+
+    def device_list(self):
+        return list(self._device_list)
+
+    def device_types(self):
+        return list(self._devices_by_type)
+
+    def devices_by_type(self, typ):
+        return list(self._devices_by_type.get(typ, []))

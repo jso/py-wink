@@ -3,5 +3,5 @@ if __name__ == "__main__":
 
     w = wink.init()
 
-    for device in w.devices:
+    for device in w.device_list():
         print device.__class__.__name__, device.id

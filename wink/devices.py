@@ -8,7 +8,10 @@ class BaseDevice(object):
         self.data = data
 
     def _path(self):
-        return "/%ss/%s" % (self.__class__.__name__, self.id)
+        return "/%ss/%s" % (self.device_type(), self.id)
+
+    def device_type(self):
+        return self.__class__.__name__
 
     def get(self):
         return self.wink._get(self._path())
