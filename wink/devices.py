@@ -35,6 +35,26 @@ class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
         def templates(self):
             return self.wink._get("/dial_templates")
 
+        def get_config(self):
+            status = self.get()
+            
+            # drop "id" keys, so we're just
+            # left with the keys that are settable
+            del status["dial_id"]
+            del status["dial_index"]
+
+            del status["position"]
+            # TODO: reevaluate whether "position" needs to be
+            # removed after Quirky replies to my bug report. There
+            # is some odd behavior here. Currently, when calling 
+            # "update" on a dial, if both position and value are 
+            # given, the dial doesn't move at all. If only value
+            # is given, then the raw 'value' value is copied to the
+            # position field (I think position should be recomputed
+            # based on the new dial_configuration)
+
+            return status
+
     def __init__(self, wink, id, data):
         BaseDevice.__init__(self, wink, id, data)
 
@@ -42,6 +62,17 @@ class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
         for dial_info in self.data["dials"]:
             this_dial = cloud_clock.dial(self.wink, dial_info["dial_id"], dial_info)
             self.dials.append(this_dial)
+
+    def rotate(self, direction="left"):
+        statuses = [d.get_config() for d in self.dials]
+
+        if direction == "left":
+            statuses.append(statuses.pop(0))
+        else:
+            statuses.insert(0, statuses.pop(-1))
+
+        for d, new_status in zip(self.dials, statuses):
+            d.update(new_status)
 
 class piggy_bank(BaseDevice, Sharing, Triggers): pass
 # TODO: deposits
