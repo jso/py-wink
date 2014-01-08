@@ -3,7 +3,7 @@ import json
 
 import devices
 
-class wink(object):
+class Wink(object):
 
     required_kwargs = set([
         "base_url",
@@ -16,7 +16,7 @@ class wink(object):
     }
 
     def __init__(self, **kwargs):
-        for k in wink.required_kwargs:
+        for k in Wink.required_kwargs:
             if k not in kwargs:
                 raise RuntimeError("kwarg %s not provided" % k)
             setattr(self, k, kwargs[k])
@@ -38,7 +38,7 @@ class wink(object):
         all_headers.update(headers)
 
         if body: 
-            all_headers.update(wink.content_headers)
+            all_headers.update(Wink.content_headers)
             if type(body) is not str:
                 body = json.dumps(body)
 
