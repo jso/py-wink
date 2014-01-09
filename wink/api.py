@@ -142,11 +142,17 @@ class Wink(object):
             self._device_list.append(device_obj)
 
             if not hasattr(self, device_type):
-                setattr(self, device_type, lambda: device_obj)
+                setattr(self, device_type, self._get_device_func(device_obj))
                 self._devices_by_type[device_type] = []
-                setattr(self, "%ss" % device_type, lambda: list(self._devices_by_type[device_type]))
+                setattr(self, "%ss" % device_type, self._get_device_list_func(device_type))
 
             self._devices_by_type[device_type].append(device_obj)
+    
+    def _get_device_func(self, device_object):
+        return lambda: device_object
+
+    def _get_device_list_func(self, device_type):
+        return lambda: list(self._devices_by_type[device_type])
 
     def device_list(self):
         return list(self._device_list)
