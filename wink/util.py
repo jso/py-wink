@@ -5,7 +5,7 @@ scripts.
 
 from api import Wink
 from auth import auth
-from persist import config_file_load, config_file_save
+from persist import ConfigFile
 
 def login(base_url="https://winkapi.quirky.com", config_file="config.cfg"):
     """
@@ -34,16 +34,16 @@ def login(base_url="https://winkapi.quirky.com", config_file="config.cfg"):
         print e
     else:
         print "Authentication success! ;-)"
-        config_file_save(config_file, auth_result)
+
+        cf = ConfigFile(config_file)
+        cf.save(auth_result)
 
 def init(config_file="config.cfg"):
     """
     Load authentication information from the specified configuration file,
-    init the Wink object, and
-    populate the device data structures from the Wink servers.
+    and init the Wink object.
     """
 
-    auth_info = config_file_load(config_file)
-    w = Wink(**auth_info)
-    w.populate_devices()
-    return w
+    cf = ConfigFile(config_file)
+
+    return Wink(cf)

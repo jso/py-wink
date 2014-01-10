@@ -27,9 +27,9 @@ the Wink class, and populates the devices from the Wink server.
 
 """
 
-from auth import auth, reauth
+from auth import auth, reauth, need_to_reauth
 
-from persist import config_file_save, config_file_load
+import persist
 
 from api import Wink
 

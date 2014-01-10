@@ -7,7 +7,7 @@ if __name__ == "__main__":
         sys.path.insert(0, "..")
         import wink
 
-    w = wink.init(config_file="../config.cfg")
+    w = wink.init("../config.cfg")
 
     if "cloud_clock" not in w.device_types():
         raise RuntimeError("you do not have a cloud_clock associated with your account!")

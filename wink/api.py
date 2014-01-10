@@ -1,13 +1,16 @@
 import httplib2
 import json
 
+from auth import reauth, need_to_reauth
+
 import devices
 
 class Wink(object):
     """
     Main object for making API calls to the Wink cloud servers.
 
-    Constructor requires the API base URL and an access token.
+    Constructor requires a persistence object,
+    e.g. persist.ConfigFile.
 
     "populate_devices" reads the device list from the Wink servers
     and instantiates the appropriate class for each device.
@@ -21,34 +24,40 @@ class Wink(object):
     "[device_type]s" returns a list of all devices of that type
     """
 
-    required_kwargs = set([
-        "base_url",
-        "access_token",
-    ])
-
     content_headers = {
         "Content-Type": "application/json",
     }
 
-    def __init__(self, **kwargs):
-        for k in Wink.required_kwargs:
-            if k not in kwargs:
-                raise RuntimeError("kwarg %s not provided" % k)
-            setattr(self, k, kwargs[k])
+    def __init__(self, auth_object):
+        """
+        Provide an object from the persist module, which will be used
+        to load and save authentication tokens as needed.
+        """
+
+        self.auth_object = auth_object
+        self.auth = self.auth_object.load()
 
         self.http = httplib2.Http()
         self._device_list = []
         self._devices_by_type = {}
 
+        self.populate_devices()
+
     def _url(self, path):
-        return "%s%s" % (self.base_url, path)
+        return "%s%s" % (self.auth["base_url"], path)
 
     def _headers(self):
         return dict(
-            Authorization="Bearer %s" % self.access_token,
+            Authorization="Bearer %s" % self.auth["access_token"],
         )
 
     def _http(self, path, method, headers={}, body=None, expected="200"):
+        # see if we need to reauth?
+        if need_to_reauth(**self.auth):
+            # TODO add error handling
+            self.auth = reauth(**self.auth)
+            self.auth_object.save(self.auth)
+
         # add the auth header
         all_headers = self._headers()
         all_headers.update(headers)
