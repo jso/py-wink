@@ -10,7 +10,9 @@ if __name__ == "__main__":
     w = wink.init("../config.cfg")
 
     if "cloud_clock" not in w.device_types():
-        raise RuntimeError("you do not have a cloud_clock associated with your account!")
+        raise RuntimeError(
+            "you do not have a cloud_clock associated with your account!"
+        )
 
     c = w.cloud_clock()
 

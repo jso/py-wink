@@ -2,8 +2,14 @@ from interfaces import *
 
 import time
 
+
 class BaseDevice(object):
-    
+    """Implements functionality shared by all devices:
+        - get
+        - update
+
+    """
+
     # list of fields from the device 'get'
     # that should be removed so we only capture
     # the 'state' and 'configuration' of the device
@@ -31,11 +37,11 @@ class BaseDevice(object):
     def get_config(self, status=None):
         if not status:
             status = self.get()
-        
+
         for field in self.non_config_fields:
             if field in status:
                 del status[field]
-        
+
         return status
 
     def revert(self):
@@ -51,21 +57,26 @@ class BaseDevice(object):
         for subdevice in self.subdevices:
             subdevice.revert()
 
+
 class powerstrip(BaseDevice, Sharing, Triggers):
 
-    class outlet(BaseDevice, Schedulable): pass
+    class outlet(BaseDevice, Schedulable):
+        pass
 
-class eggtray(BaseDevice, Sharing, Triggers): pass
+
+class eggtray(BaseDevice, Sharing, Triggers):
+    pass
+
 
 class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
 
     non_config_fields = [
         "cloud_clock_id",
-        
-        # TODO revisit this decision -- can/should we 
+
+        # TODO revisit this decision -- can/should we
         # count them as revertible state?
-        "cloud_clock_triggers", 
-        "dials", # will be done explicitly, later
+        "cloud_clock_triggers",
+        "dials",  # will be done explicitly, later
         "last_reading",
         "mac_address",
         "serial",
@@ -89,10 +100,10 @@ class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
 
         def demo(self, delay=5):
             """
-            Generates a sequence of updates to run the dial through 
+            Generates a sequence of updates to run the dial through
             the range of values and positions.
             """
-            
+
             original = self.get_config()
 
             # do some stuff
@@ -105,7 +116,7 @@ class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
             self.update(dict(
                 channel_configuration=dict(channel_id="10"),
                 dial_configuration=original["dial_configuration"],
-                label="demo!", 
+                label="demo!",
             ))
             time.sleep(delay)
 
@@ -143,9 +154,12 @@ class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
         BaseDevice.__init__(self, wink, id, data)
 
         for dial_info in self.data["dials"]:
-            this_dial = cloud_clock.dial(self.wink, dial_info["dial_id"], dial_info)
+            this_dial = cloud_clock.dial(
+                self.wink,
+                dial_info["dial_id"],
+                dial_info)
             self.subdevices.append(this_dial)
-            
+
         self.dials = self.subdevices
 
     def rotate(self, direction="left"):
@@ -159,7 +173,11 @@ class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
         for d, new_status in zip(self.dials, statuses):
             d.update(new_status)
 
-class piggy_bank(BaseDevice, Sharing, Triggers): pass
-# TODO: deposits
 
-class sensor_pod(BaseDevice, Sharing, Triggers): pass
+class piggy_bank(BaseDevice, Sharing, Triggers):
+    pass
+    # TODO: deposits
+
+
+class sensor_pod(BaseDevice, Sharing, Triggers):
+    pass

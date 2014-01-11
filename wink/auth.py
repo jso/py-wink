@@ -1,5 +1,4 @@
-"""
-Functions for authenticating, and several alternatives
+"""Functions for authenticating, and several alternatives
 for persisting credentials.
 
 Both auth and reauth functions require the following kwargs:
@@ -14,35 +13,39 @@ import json
 
 default_expires_in = 900
 
-_datetime_format = "%Y-%m-%d %H:%M:%S" # assume UTC
+_datetime_format = "%Y-%m-%d %H:%M:%S"  # assume UTC
+
 
 def _datetime_serialize(dt):
     return dt.strftime(_datetime_format)
 
+
 def _datetime_deserialize(s):
     return datetime.datetime.strptime(s, _datetime_format)
 
-def need_to_reauth(tolerance=10, **kwargs):
-    """
-    Determine whether reauthentication is necessary.
-    """
 
-    if "expires" not in kwargs: return True
+def need_to_reauth(tolerance=10, **kwargs):
+    """Determine whether reauthentication is necessary."""
+
+    if "expires" not in kwargs:
+        return True
 
     expires = _datetime_deserialize(kwargs["expires"])
 
     now = (
-        datetime.datetime.utcnow() + 
+        datetime.datetime.utcnow() +
         datetime.timedelta(0, tolerance)
     )
-    
+
     return now >= expires
 
+
 def auth(**kwargs):
-    """ Do password authentication.
-    
+    """Do password authentication.
+
     Also requires kwargs "username" and "password".
     """
+
     data = dict(
         grant_type="password",
         username=kwargs["username"],
@@ -54,8 +57,9 @@ def auth(**kwargs):
 
     return result
 
+
 def reauth(**kwargs):
-    """ Use the refresh token to update the access token.
+    """Use the refresh token to update the access token.
 
     Also requires kwarg "refresh_token".
     """
@@ -65,6 +69,7 @@ def reauth(**kwargs):
     )
 
     return _auth(data, **kwargs)
+
 
 def _auth(data, auth_path="/oauth2/token", **kwargs):
     body = dict(
@@ -85,7 +90,7 @@ def _auth(data, auth_path="/oauth2/token", **kwargs):
 
     if resp["status"] != "201":
         raise RuntimeError(
-            "expected HTTP 201, but got %s for auth" % resp["status"] 
+            "expected HTTP 201, but got %s for auth" % resp["status"]
         )
 
     data = json.loads(content)["data"]
@@ -98,7 +103,7 @@ def _auth(data, auth_path="/oauth2/token", **kwargs):
     # compute the expiration time in UTC and format in
     # seconds since the epoch
     expires = (
-        datetime.datetime.utcnow() + 
+        datetime.datetime.utcnow() +
         datetime.timedelta(0, int(data["expires_in"]))
     )
 
@@ -112,4 +117,3 @@ def _auth(data, auth_path="/oauth2/token", **kwargs):
     ))
 
     return new_auth_data
-

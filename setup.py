@@ -8,6 +8,7 @@ setup(
     author_email="me@johnotto.net",
     description="Library for interfacing with Wink devices by Quirky",
     license="MIT",
-    keywords="Wink Quirky Nimbus Spotter Porkfolio Pivot Power Genius Eggminder",
+    keywords=("Wink Quirky Nimbus Spotter Porkfolio Pivot Power Genius"
+              "Eggminder"),
     url="https://github.com/jso/py-wink",
 )

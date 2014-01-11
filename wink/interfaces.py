@@ -1,7 +1,8 @@
 import urllib
 
+
 class Sharing(object):
-    
+
     all_permissions = [
         "read_data",
         "write_data",
@@ -30,8 +31,9 @@ class Sharing(object):
     def unshare_with(self, email):
         return self.wink._delete(self._share_path(email))
 
+
 class Triggers(object):
-    
+
     def _device_trigger_path(self):
         return "%s/triggers" % self._path()
 
@@ -46,6 +48,7 @@ class Triggers(object):
 
     def update_trigger(self, id, data):
         return self.wink._put(self._trigger_path(id), data)
+
 
 class Alarms(object):
 
@@ -66,6 +69,7 @@ class Alarms(object):
 
     def delete_alarm(self, id):
         return self.wink._delete(self._alarm_path(id))
+
 
 class Schedulable(object):
 

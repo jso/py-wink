@@ -2,12 +2,11 @@ import httplib2
 import json
 
 from auth import reauth, need_to_reauth
-
 import devices
 
+
 class Wink(object):
-    """
-    Main object for making API calls to the Wink cloud servers.
+    """Main object for making API calls to the Wink cloud servers.
 
     Constructor requires a persistence object,
     e.g. persist.ConfigFile.
@@ -62,7 +61,7 @@ class Wink(object):
         all_headers = self._headers()
         all_headers.update(headers)
 
-        if body: 
+        if body:
             all_headers.update(Wink.content_headers)
             if type(body) is not str:
                 body = json.dumps(body)
@@ -74,14 +73,15 @@ class Wink(object):
             body=body
         )
 
-        if type(expected) is str: expected = set([expected])
+        if type(expected) is str:
+            expected = set([expected])
 
         if resp["status"] not in expected:
             raise RuntimeError(
                 "expected code %s, but got %s for %s %s" % (
-                    expected, 
-                    resp["status"], 
-                    method, 
+                    expected,
+                    resp["status"],
+                    method,
                     path,
                 )
             )
@@ -97,7 +97,8 @@ class Wink(object):
         return self._http(path, "PUT", body=data)
 
     def _post(self, path, data):
-        return self._http(path, "POST", body=data, expected=["200", "201", "202"])
+        return self._http(path, "POST", body=data,
+                          expected=["200", "201", "202"])
 
     def _delete(self, path):
         return self._http(path, "DELETE", expected="204")
@@ -142,7 +143,8 @@ class Wink(object):
                     device_id = device_info[k]
                     break
 
-            if device_type is None: continue
+            if device_type is None:
+                continue
 
             device_cls = getattr(devices, device_type)
             device_obj = device_cls(self, device_id, device_info)
@@ -151,12 +153,16 @@ class Wink(object):
             self._device_list.append(device_obj)
 
             if not hasattr(self, device_type):
-                setattr(self, device_type, self._get_device_func(device_obj))
+                setattr(self,
+                        device_type,
+                        self._get_device_func(device_obj))
                 self._devices_by_type[device_type] = []
-                setattr(self, "%ss" % device_type, self._get_device_list_func(device_type))
+                setattr(self,
+                        "%ss" % device_type,
+                        self._get_device_list_func(device_type))
 
             self._devices_by_type[device_type].append(device_obj)
-    
+
     def _get_device_func(self, device_object):
         return lambda: device_object
 

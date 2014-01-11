@@ -1,11 +1,12 @@
-"""
-Utility functions that are best kept inside the package, as opposed to external
-scripts.
+"""Utility functions that are best kept inside the package,
+as opposed to external scripts.
+
 """
 
 from api import Wink
 from auth import auth
 from persist import ConfigFile
+
 
 def login(base_url="https://winkapi.quirky.com", config_file="config.cfg"):
     """
@@ -37,6 +38,7 @@ def login(base_url="https://winkapi.quirky.com", config_file="config.cfg"):
 
         cf = ConfigFile(config_file)
         cf.save(auth_result)
+
 
 def init(config_file="config.cfg"):
     """

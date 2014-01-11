@@ -1,5 +1,5 @@
-""" 
-Library for interfacing with Wink API for devices by Quirky, including:
+""" Library for interfacing with Wink API for devices by Quirky, including:
+
     - "Eggminder" eggtray
     - "Nimbus" cloud_clock
     - "Pivot Power Genius" powerstrip

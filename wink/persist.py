@@ -1,5 +1,6 @@
 from ConfigParser import ConfigParser
 
+
 class PersistInterface(object):
     """
     Persistence classes should implement this interface.
@@ -11,9 +12,9 @@ class PersistInterface(object):
     def save(self, data):
         pass
 
+
 class ConfigFile(PersistInterface):
-    """
-    Use a config file to persist authentication information.
+    """Use a config file to persist authentication information.
     """
 
     def __init__(self, filename="config.cfg"):
@@ -31,4 +32,3 @@ class ConfigFile(PersistInterface):
             cp.set("auth", k, v)
         with open(self.filename, "wb") as f:
             cp.write(f)
-
