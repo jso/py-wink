@@ -40,7 +40,7 @@ def login(base_url="https://winkapi.quirky.com", config_file="config.cfg"):
         cf.save(auth_result)
 
 
-def init(config_file="config.cfg"):
+def init(config_file="config.cfg", debug=False):
     """
     Load authentication information from the specified configuration file,
     and init the Wink object.
@@ -48,4 +48,4 @@ def init(config_file="config.cfg"):
 
     cf = ConfigFile(config_file)
 
-    return Wink(cf)
+    return Wink(cf, debug=debug)

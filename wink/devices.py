@@ -3,7 +3,49 @@ from interfaces import *
 import time
 
 
-class BaseDevice(object):
+class CreatableResourceBase(object):
+    """Base class for 'creatable' objects, e.g.:
+        - triggers
+        - alarms
+        - scheduled_outlet_states
+
+    """
+
+    # TODO add automatic getters/setters for these fields
+    mutable_fields = []
+
+    def __init__(self, parent, data):
+        self.parent = parent
+        self.data = data
+
+        self.id = data["%s_id" % self.resource_type()]
+
+    def _path(self):
+        return "/%ss/%s" % (self.resource_type(), self.id)
+
+    def resource_type(self):
+        return self.__class__.__name__
+
+    def get(self):
+        return self.parent.wink._get(self._path())
+
+    def update(self, data):
+        return self.parent.wink._put(self._path(), data)
+
+    def delete(self):
+        return self.parent.wink._delete(self._path())
+
+
+class CreatableSubResourceBase(CreatableResourceBase):
+
+    def _path(self):
+        return "%s%s" % (
+            self.parent._path(),
+            CreatableResourceBase._path(self)
+        )
+
+
+class DeviceBase(object):
     """Implements functionality shared by all devices:
         - get
         - update
@@ -15,12 +57,31 @@ class BaseDevice(object):
     # the 'state' and 'configuration' of the device
     non_config_fields = []
 
-    def __init__(self, wink, id, data):
+    # TODO add automatic getters/setters for these fields
+    mutable_fields = []
+
+    subdevice_types = []
+
+    def __init__(self, wink, data):
         self.wink = wink
-        self.id = id
         self.data = data
 
-        self.subdevices = []
+        self.id = data["%s_id" % self.device_type()]
+
+        if self.subdevice_types:
+            self.subdevices = []
+
+        for subdevice_type in self.subdevice_types:
+            subdevice_plural = "%ss" % subdevice_type.__name__
+            setattr(self, subdevice_plural, [])
+            subdevice_list = getattr(self, subdevice_plural)
+
+            for subdevice_info in self.data[subdevice_plural]:
+                this_obj = subdevice_type(
+                    self.wink,
+                    subdevice_info)
+                self.subdevices.append(this_obj)
+                subdevice_list.append(this_obj)
 
     def _path(self):
         return "/%ss/%s" % (self.device_type(), self.id)
@@ -57,18 +118,81 @@ class BaseDevice(object):
         for subdevice in self.subdevices:
             subdevice.revert()
 
+    class trigger(CreatableResourceBase):
 
-class powerstrip(BaseDevice, Sharing, Triggers):
+        mutable_fields = [
+            ("name", str),
+            ("enabled", bool),
+            ("trigger_configuration", dict),
+            ("channel_configuration", dict),
+        ]
 
-    class outlet(BaseDevice, Schedulable):
-        pass
+    def _trigger_path(self):
+        return "%s/triggers" % self._path()
+
+    def create_trigger(self, data):
+        res = self.wink._post(self._trigger_path(), data)
+
+        return DeviceBase.trigger(self, res)
 
 
-class eggtray(BaseDevice, Sharing, Triggers):
+class powerstrip(DeviceBase, Sharable):
+
+    non_config_fields = [
+        "powerstrip_id",
+
+        # TODO revisit this decision -- can/should we
+        # count them as revertible state?
+        "powerstrip_triggers",
+        "outlets",
+        "last_reading",
+        "mac_address",
+        "serial",
+        "subscription",
+        "triggers",
+        "user_ids",
+    ]
+
+    class outlet(DeviceBase):
+
+        non_config_fields = [
+            "outlet_id",
+            "outlet_index",
+        ]
+
+        mutable_fields = [
+            ("name", str),
+            ("icon_id", str),
+            ("powered", bool),
+        ]
+
+        class scheduled_outlet_state(CreatableSubResourceBase):
+
+            mutable_fields = [
+                ("name", str),
+                ("powered", bool),
+                ("enabled", bool),
+                ("recurrence", str),
+            ]
+
+        def _schedule_path(self):
+            return "%s/scheduled_outlet_states" % self._path()
+
+        def create_schedule(self, data):
+            res = self.wink._post(self._schedule_path(), data)
+
+            return powerstrip.outlet.scheduled_outlet_state(self, res)
+
+    subdevice_types = [
+        outlet
+    ]
+
+
+class eggtray(DeviceBase, Sharable):
     pass
 
 
-class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
+class cloud_clock(DeviceBase, Sharable):
 
     non_config_fields = [
         "cloud_clock_id",
@@ -85,14 +209,28 @@ class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
         "user_ids",
     ]
 
+    mutable_fields = [
+        ("name", str),
+    ]
+
     # while dial clearly belongs to a cloud_clock, the API puts
     # the dial interface at the root level, so I am representing
-    # it as a BaseDevice
-    class dial(BaseDevice):
+    # it as a DeviceBase
+    class dial(DeviceBase):
 
         non_config_fields = [
             "dial_id",
             "dial_index",
+            "labels",
+            "position",
+        ]
+
+        mutable_fields = [
+            ("name", str),
+            ("label", str),
+            ("channel_configuration", dict),
+            ("dial_configuration", dict),
+            ("brightness", int),
         ]
 
         def templates(self):
@@ -150,17 +288,17 @@ class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
                 labels=original["labels"],
             ))
 
-    def __init__(self, wink, id, data):
-        BaseDevice.__init__(self, wink, id, data)
+    subdevice_types = [
+        dial,
+    ]
 
-        for dial_info in self.data["dials"]:
-            this_dial = cloud_clock.dial(
-                self.wink,
-                dial_info["dial_id"],
-                dial_info)
-            self.subdevices.append(this_dial)
+    class alarm(CreatableResourceBase):
 
-        self.dials = self.subdevices
+        mutable_fields = [
+            ("name", str),
+            ("recurrence", str),
+            ("enabled", bool),
+        ]
 
     def rotate(self, direction="left"):
         statuses = [d.get_config() for d in self.dials]
@@ -173,11 +311,31 @@ class cloud_clock(BaseDevice, Sharing, Triggers, Alarms):
         for d, new_status in zip(self.dials, statuses):
             d.update(new_status)
 
+    def _alarm_path(self):
+        return "%s/alarms" % self._path()
 
-class piggy_bank(BaseDevice, Sharing, Triggers):
+    def get_alarms(self):
+        return [
+            cloud_clock.alarm(self, x)
+            for x
+            in self.get().get("alarms", [])
+        ]
+
+    def create_alarm(self, name, recurrence, enabled=True):
+        data = dict(
+            name=name,
+            recurrence=recurrence,
+            enabled=enabled)
+
+        res = self.wink._post(self._alarm_path(), data)
+
+        return cloud_clock.alarm(self, res)
+
+
+class piggy_bank(DeviceBase, Sharable):
     pass
     # TODO: deposits
 
 
-class sensor_pod(BaseDevice, Sharing, Triggers):
+class sensor_pod(DeviceBase, Sharable):
     pass

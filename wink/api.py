@@ -1,5 +1,6 @@
 import httplib2
 import json
+from pprint import pprint
 
 from auth import reauth, need_to_reauth
 import devices
@@ -27,11 +28,13 @@ class Wink(object):
         "Content-Type": "application/json",
     }
 
-    def __init__(self, auth_object):
+    def __init__(self, auth_object, debug=False):
         """
         Provide an object from the persist module, which will be used
         to load and save authentication tokens as needed.
         """
+
+        self.debug = debug
 
         self.auth_object = auth_object
         self.auth = self.auth_object.load()
@@ -53,6 +56,9 @@ class Wink(object):
     def _http(self, path, method, headers={}, body=None, expected="200"):
         # see if we need to reauth?
         if need_to_reauth(**self.auth):
+            if self.debug:
+                print "Refreshing access token"
+
             # TODO add error handling
             self.auth = reauth(**self.auth)
             self.auth_object.save(self.auth)
@@ -66,12 +72,35 @@ class Wink(object):
             if type(body) is not str:
                 body = json.dumps(body)
 
+        if self.debug:
+            print "Request: %s %s" % (method, path)
+            if headers:
+                print "Extra headers:", headers
+            if body:
+                print "Body:",
+                pprint(body)
+
         resp, content = self.http.request(
             self._url(path),
             method,
             headers=all_headers,
             body=body
         )
+
+        if self.debug:
+            print "Response:", resp["status"]
+
+        # coerce to JSON, if possible
+        if content:
+            try:
+                content = json.loads(content)
+                if "errors" in content and content["errors"]:
+                    raise RuntimeError("\n".join(content["errors"]))
+            except:
+                pass
+
+        if self.debug:
+            pprint(content)
 
         if type(expected) is str:
             expected = set([expected])
@@ -87,18 +116,18 @@ class Wink(object):
             )
 
         if content:
-            return json.loads(content)
+            return content
         return {}
 
     def _get(self, path):
         return self._http(path, "GET").get("data")
 
     def _put(self, path, data):
-        return self._http(path, "PUT", body=data)
+        return self._http(path, "PUT", body=data).get("data")
 
     def _post(self, path, data):
         return self._http(path, "POST", body=data,
-                          expected=["200", "201", "202"])
+                          expected=["200", "201", "202"]).get("data")
 
     def _delete(self, path):
         return self._http(path, "DELETE", expected="204")
@@ -108,6 +137,9 @@ class Wink(object):
 
     def update_profile(self, data):
         return self._put("/users/me", data)
+
+    def update_profile_email(self, email):
+        return self.update_profile(dict(email=email))
 
     def get_devices(self):
         return self._get("/users/me/wink_devices")
@@ -124,6 +156,12 @@ class Wink(object):
     def get_channels(self):
         return self._get("/channels")
 
+    def get_inbound_channels(self):
+        return [x for x in self.get_channels() if x["inbound"]]
+
+    def get_outbound_channels(self):
+        return [x for x in self.get_channels() if x["outbound"]]
+
     def populate_devices(self):
         devices_info = self.get_devices()
 
@@ -136,18 +174,17 @@ class Wink(object):
         self._devices_by_type.clear()
 
         for device_info in devices_info:
-            device_type, device_id = None, None
+            device_type = None
             for k in device_info:
                 if k.endswith("_id") and hasattr(devices, k[:-3]):
                     device_type = k[:-3]
-                    device_id = device_info[k]
                     break
 
             if device_type is None:
                 continue
 
             device_cls = getattr(devices, device_type)
-            device_obj = device_cls(self, device_id, device_info)
+            device_obj = device_cls(self, device_info)
 
             # update some data structures to provide access to the devices
             self._device_list.append(device_obj)
