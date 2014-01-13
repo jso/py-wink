@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     print "'demoing' each of the dials:"
 
-    for i, dial in enumerate(c.dials):
+    for i, dial in enumerate(c.dials()):
         print "dial #%d '%s'..." % (i+1, dial.data.get("name"))
         dial.demo()
 

@@ -68,20 +68,31 @@ class DeviceBase(object):
 
         self.id = data["%s_id" % self.device_type()]
 
-        if self.subdevice_types:
-            self.subdevices = []
+        self._subdevices = []
 
         for subdevice_type in self.subdevice_types:
             subdevice_plural = "%ss" % subdevice_type.__name__
-            setattr(self, subdevice_plural, [])
-            subdevice_list = getattr(self, subdevice_plural)
+            setattr(self, "_%s" % subdevice_plural, [])
+            setattr(self,
+                    subdevice_plural,
+                    self._subdevices_by_type_closure(subdevice_plural))
+            subdevice_list = getattr(self, "_%s" % subdevice_plural)
 
             for subdevice_info in self.data[subdevice_plural]:
                 this_obj = subdevice_type(
                     self.wink,
                     subdevice_info)
-                self.subdevices.append(this_obj)
+                self._subdevices.append(this_obj)
                 subdevice_list.append(this_obj)
+
+    def _subdevices_by_type_closure(self, subdevice_type):
+        return lambda: self.subdevices_by_type(subdevice_type)
+
+    def subdevices_by_type(self, typ):
+        return list(getattr(self, "_%s" % typ, []))
+
+    def subdevices(self):
+        return list(self._subdevices)
 
     def _path(self):
         return "/%ss/%s" % (self.device_type(), self.id)
@@ -115,7 +126,7 @@ class DeviceBase(object):
         old_config = self.get_config(self.data)
         self.update(old_config)
 
-        for subdevice in self.subdevices:
+        for subdevice in self.subdevices():
             subdevice.revert()
 
     class trigger(CreatableResourceBase):
@@ -129,6 +140,13 @@ class DeviceBase(object):
 
     def _trigger_path(self):
         return "%s/triggers" % self._path()
+
+    def triggers(self):
+        return [
+            DeviceBase.trigger(self, x)
+            for x
+            in self.get().get("triggers", [])
+        ]
 
     def create_trigger(self, data):
         res = self.wink._post(self._trigger_path(), data)
@@ -292,6 +310,17 @@ class cloud_clock(DeviceBase, Sharable):
         dial,
     ]
 
+    def rotate(self, direction="left"):
+        statuses = [d.get_config() for d in self.dials()]
+
+        if direction == "left":
+            statuses.append(statuses.pop(0))
+        else:
+            statuses.insert(0, statuses.pop(-1))
+
+        for d, new_status in zip(self.dials(), statuses):
+            d.update(new_status)
+
     class alarm(CreatableResourceBase):
 
         mutable_fields = [
@@ -300,21 +329,10 @@ class cloud_clock(DeviceBase, Sharable):
             ("enabled", bool),
         ]
 
-    def rotate(self, direction="left"):
-        statuses = [d.get_config() for d in self.dials]
-
-        if direction == "left":
-            statuses.append(statuses.pop(0))
-        else:
-            statuses.insert(0, statuses.pop(-1))
-
-        for d, new_status in zip(self.dials, statuses):
-            d.update(new_status)
-
     def _alarm_path(self):
         return "%s/alarms" % self._path()
 
-    def get_alarms(self):
+    def alarms(self):
         return [
             cloud_clock.alarm(self, x)
             for x
