@@ -29,7 +29,8 @@ All bug reports and feature requests are much appreciated.
    emailing questions@quirky.com and asking for early access to the Wink API. 
 
 2. Run the "login.py" script and provide your tokens and Wink account
-   credentials.
+   credentials. This will overwrite the sample config.cfg file and allow you to
+   interact with the API.
 
 3. Run the "test.py" script in interactive mode (`python -i test.py`) so you
    can interact with the Wink servers. All the test script does is fetch a list
